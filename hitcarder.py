@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+try:
+    from requests.packages.urllib3.util.retry import Retry
+except ImportError:
+    from urllib3.util import Retry
 import json
 import re
 import time
@@ -44,8 +47,8 @@ class HitCarder(object):
         """Login to ZJU platform"""
         time.sleep(1)
         res = self.sess.get(self.login_url)
-        execution = re.search(
-            'name="execution" value="(.*?)"', res.text).group(1)
+        execution = re.search('name="execution" value="(.*?)"', res.text)[1]
+
         time.sleep(1)
         res = self.sess.get(
             url='https://zjuam.zju.edu.cn/cas/v2/getPubKey').json()
@@ -74,7 +77,9 @@ class HitCarder(object):
 
     def get_date(self):
         """Get current date."""
-        today = datetime.datetime.utcnow() + datetime.timedelta(hours=+8)
+        today = datetime.datetime.now(
+            datetime.timezone.utc) + datetime.timedelta(hours=+8)
+
         return "%4d%02d%02d" % (today.year, today.month, today.day)
 
     def check_form(self):
@@ -85,7 +90,8 @@ class HitCarder(object):
         try:
             new_form = re.findall(r'<ul>[\s\S]*?</ul>', html)[0]
         except IndexError as _:
-            raise RegexMatchError('Relative info not found in html with regex')
+            raise RegexMatchError(
+                'Relative info not found in html with regex') from _
 
         with open("form.txt", "r", encoding="utf-8") as f:
             if new_form == f.read():
@@ -118,23 +124,23 @@ class HitCarder(object):
 
         except IndexError as err:
             raise RegexMatchError(
-                'Relative info not found in html with regex: ' + str(err))
-        except json.decoder.JSONDecodeError as err:
-            raise DecodeError('JSON decode error: ' + str(err))
+                f'Relative info not found in html with regex: {str(err)}') from err
 
+        except json.decoder.JSONDecodeError as err:
+            raise DecodeError(f'JSON decode error: {str(err)}') from err
         new_info = def_info.copy()
         new_info.update(magic_code_group)
         # form change
         new_info['szgjcs'] = ""
         new_info['zgfx14rfhsj'] = ""
-        new_info['geo_api_info'] = old_info['geo_api_info'] # 定位
+        new_info['geo_api_info'] = old_info['geo_api_info']  # 定位
         new_info['address'] = old_info['address']
         new_info['area'] = old_info['area']
         new_info['city'] = old_info['city']
         new_info['ismoved'] = 0
-        new_info['sfzx'] = old_info['sfzx'] # 在校
-        new_info['sfymqjczrj'] = old_info['sfymqjczrj'] # 入境
-        new_info['sfqrxxss'] = 1 # 属实
+        new_info['sfzx'] = old_info['sfzx']  # 在校
+        new_info['sfymqjczrj'] = old_info['sfymqjczrj']  # 入境
+        new_info['sfqrxxss'] = 1  # 属实
 
         self.info = new_info
         # print(json.dumps(self.info))
@@ -176,26 +182,27 @@ def main(username, password):
     hit_carder = HitCarder(username, password)
     print("[Time] %s" % datetime.datetime.now().strftime(
         '%Y-%m-%d %H:%M:%S'))
-    print(datetime.datetime.utcnow() + datetime.timedelta(hours=+8))
+    print(datetime.datetime.now(datetime.timezone.utc) +
+          datetime.timedelta(hours=+8))
+
     print("打卡任务启动")
 
     try:
         hit_carder.login()
         print('已登录到浙大统一身份认证平台')
     except Exception as err:
-        return 1, '打卡登录失败：' + str(err)
-
+        return 1, f'打卡登录失败：{str(err)}'
     try:
         ret = hit_carder.check_form()
         if not ret:
             return 2, '打卡信息已改变，请手动打卡'
     except Exception as err:
-        return 1, '获取信息失败，请手动打卡: ' + str(err)
+        return 1, f'获取信息失败，请手动打卡: {str(err)}'
 
     try:
         hit_carder.get_info()
     except Exception as err:
-        return 1, '获取信息失败，请手动打卡: ' + str(err)
+        return 1, f'获取信息失败，请手动打卡: {str(err)}'
 
     try:
         res = hit_carder.post()
@@ -206,7 +213,7 @@ def main(username, password):
             return 0, '今天已经打卡'
         else:
             return 1, '打卡失败'
-    except:
+    except Exception:
         return 1, '打卡数据提交失败'
 
 
@@ -221,17 +228,14 @@ if __name__ == "__main__":
         ret, msg = main(username, password)
         print(ret, msg)
 
-    dingtalk_token = os.environ.get('DINGTALK_TOKEN')
-    if dingtalk_token:
+    if dingtalk_token := os.environ.get('DINGTALK_TOKEN'):
         ret = message.dingtalk(msg, dingtalk_token)
         print('send_dingtalk_message', ret)
 
-    serverchan_key = os.environ.get('SERVERCHAN_KEY')
-    if serverchan_key:
+    if serverchan_key := os.environ.get('SERVERCHAN_KEY'):
         ret = message.serverchan(msg, '', serverchan_key)
         print('send_serverChan_message', ret)
 
-    pushplus_token = os.environ.get('PUSHPLUS_TOKEN')
-    if pushplus_token:
+    if pushplus_token := os.environ.get('PUSHPLUS_TOKEN'):
         print('pushplus服务已下线，建议使用钉钉')
         exit(-1)
