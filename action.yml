@@ -13,6 +13,12 @@ inputs:
   password:
     description: zju account password.
     required: true
+  api_key:
+    description: baidu account api key.
+    required: true
+  secret_key:
+    description: baidu account secret key.
+    required: true
   dingtalk_token:
     description: dingtalk_token.
     required: false
@@ -33,6 +39,8 @@ runs:
       env:
         USERNAME: ${{ inputs.username }}
         PASSWORD: ${{ inputs.password }}
+        API_KEY: ${{ inputs.api_key }}
+        SECRET_KEY: ${{ inputs.secret_key }}
         DINGTALK_TOKEN: ${{ inputs.dingtalk_token }}
         SERVERCHAN_KEY: ${{ inputs.serverchan_key }}
         PUSHPLUS_TOKEN: ${{ inputs.pushplus_token }}
