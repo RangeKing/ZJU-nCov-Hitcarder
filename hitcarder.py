@@ -21,16 +21,17 @@ def ocr_api(image_base64, API_KEY, SECRET_KEY):
     '''
     调用百度云OCR API进行验证码识别
     '''
-    request_url = 'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic' #使用通用文字识别（标准版）
+    request_url = 'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic'  # 使用通用文字识别（标准版）
     host = f'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id={API_KEY}&client_secret={SECRET_KEY}'
 
     if response := requests.get(host):
         access_token = response.json()['access_token']
-    params = {"image":image_base64}
+    params = {"image": image_base64}
     request_url = f"{request_url}?access_token={access_token}"
     headers = {'content-type': 'application/x-www-form-urlencoded'}
     if response := requests.post(request_url, data=params, headers=headers):
         return response.json()
+
 
 class HitCarder(object):
     """Hit carder class
@@ -128,7 +129,8 @@ class HitCarder(object):
         res = self.sess.get(self.code_url)
         code_base64 = base64.b64encode(res.content)
         try:
-            verify_code = ocr_api(code_base64, self.API_KEY, self.SECRET_KEY)['words_result'][0]['words']
+            verify_code = ocr_api(code_base64, self.API_KEY, self.SECRET_KEY)[
+                'words_result'][0]['words']
         except URLError as err:
             print(err)
         return verify_code
@@ -175,7 +177,7 @@ class HitCarder(object):
         new_info['sfzx'] = old_info['sfzx']  # 在校
         new_info['sfymqjczrj'] = old_info['sfymqjczrj']  # 入境
         new_info['sfqrxxss'] = 1  # 属实
-        new_info['verifyCode'] = self.get_verify_code() # 验证码
+        new_info['verifyCode'] = self.get_verify_code()  # 验证码
 
         self.info = new_info
         # print(json.dumps(self.info))
@@ -227,6 +229,7 @@ def main(username, password, API_KEY, SECRET_KEY):
         print('已登录到浙大统一身份认证平台')
     except Exception as err:
         return 1, f'打卡登录失败：{str(err)}'
+
     try:
         ret = hit_carder.check_form()
         if not ret:
@@ -246,6 +249,8 @@ def main(username, password, API_KEY, SECRET_KEY):
             return 0, '打卡成功'
         elif str(res['m']) == '今天已经填报了':
             return 0, '今天已经打卡'
+        elif str(res['m']) == '验证码错误':
+            return 1, '验证码错误'
         else:
             return 1, '打卡失败'
     except Exception:
