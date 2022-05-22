@@ -177,7 +177,7 @@ class HitCarder(object):
         new_info['sfzx'] = old_info['sfzx']  # 在校
         new_info['sfymqjczrj'] = old_info['sfymqjczrj']  # 入境
         new_info['sfqrxxss'] = 1  # 属实
-        new_info['verifyCode'] = self.get_verify_code()  # 验证码
+        # new_info['verifyCode'] = self.get_verify_code()  # 验证码
 
         self.info = new_info
         # print(json.dumps(self.info))
