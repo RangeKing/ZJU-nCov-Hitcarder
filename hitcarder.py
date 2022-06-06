@@ -244,7 +244,7 @@ def main(username, password, API_KEY, SECRET_KEY):
 
     try:
         res = hit_carder.post()
-        print(res)
+        # print(res)
         if str(res['e']) == '0':
             return 0, '打卡成功'
         elif str(res['m']) == '今天已经填报了':
